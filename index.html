@@ -18,6 +18,11 @@
             padding: 0;
         }
         
+        html {
+            height: 100%;
+            overflow: hidden;
+        }
+
         body {
             background: #ffffff;
             color: #ffffff;
@@ -39,6 +44,7 @@
         
         .chat-header {
             /* background: linear-gradient(90deg, #000000, #60614c, #bebf61, #ffee00, #ffee00); */
+            background: #ffffff;
             color: #000000;
             padding: 3px 9px;;
             display: flex;
@@ -47,6 +53,11 @@
             font-weight: 600;
             font-size: 1.5em;
             font-family: 'Vazir', sans-serif;
+            position: sticky;
+            top: 0;
+            z-index: 500;
+            flex-shrink: 0;
+            transition: background 0.3s, color 0.3s;
         }
         
         #menu-toggle {
@@ -158,12 +169,15 @@
         .chat-input-area {
             display: none;
             padding: 7px;
+            padding-bottom: calc(7px + env(safe-area-inset-bottom, 0px));
+            margin-bottom: 12px;
             border-top: 1px solid #ddd;
             background: #fff;
             align-items: flex-end;
             gap: 8px;
             font-family: 'Vazir', sans-serif;
             transition: background 0.3s;
+            flex-shrink: 0;
         }
         
         .chat-input-wrapper {
@@ -781,7 +795,7 @@
 
         @media (min-width: 768px) {
             .chat-feed { padding: 20px; max-width: 800px; margin: 0 auto; width: 100%; }
-            .chat-input-area { max-width: 800px; margin: 0 auto; width: 100%; padding: 15px 20px; }
+            .chat-input-area { max-width: 800px; margin: 0 auto 12px auto; width: 100%; padding: 15px 20px; }
             #start-input-container { max-width: 600px; }
             .edit-input-wrapper { max-width: 800px; margin: 0 auto; }
         }
@@ -1002,7 +1016,7 @@
 <body>
     <div class="chat-container">
         <header class="chat-header">
-            <img src="logo1.png" width="125px" alt="ChatBot Logo" onerror="this.style.display='none'; this.insertAdjacentHTML('afterend', '<span>ChatBot</span>')">
+            <img src="logo1.png" width="100px" alt="ChatBot Logo" onerror="this.style.display='none'; this.insertAdjacentHTML('afterend', '<span>ChatBot</span>')">
             <button id="menu-toggle">☰</button>
         </header>
 
@@ -1851,7 +1865,7 @@
 
         function closeNav() {
             sidenav.classList.remove("open");
-            document.body.style.overflow = "auto";
+            document.body.style.overflow = "hidden";
             // نمایش دوباره دکمه اصلی
             menuToggle.style.visibility = "visible";
             isMenuOpen = false;
