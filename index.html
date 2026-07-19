@@ -1,0 +1,2421 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KarimiGPT</title>
+    <link rel="icon" type="image/png" href="logoo.jpg">
+
+    <!-- PWA: Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- PWA: تنظیمات عمومی -->
+    <meta name="theme-color" content="#ffffff">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- PWA: تنظیمات مخصوص iOS/Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="KarimiGPT">
+    <link rel="apple-touch-icon" href="logoo.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet" type="text/css" />
+    
+    <!-- کتابخانه‌های Markdown و Sanitize برای فرمت‌دهی متن -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        html {
+            height: 100%;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        body {
+            background: #ffffff;
+            color: #ffffff;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            font-family: 'Vazir', sans-serif;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            width: 100vw;
+            background: #ffffff;
+            transition: background 0.3s;
+            font-family: 'Vazir', sans-serif;
+        }
+        
+        .chat-header {
+            /* background: linear-gradient(90deg, #000000, #60614c, #bebf61, #ffee00, #ffee00); */
+            background: #ffffff;
+            color: #000000;
+            padding: 3px 9px;;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1.5em;
+            font-family: 'Vazir', sans-serif;
+            position: sticky;
+            top: 0;
+            z-index: 500;
+            flex-shrink: 0;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        #menu-toggle {
+            background: none;
+            border: none;
+            color: #000000;
+            font-size: 1.8em;
+            cursor: pointer;
+            font-family: 'Vazir', sans-serif;
+            z-index: 1001;
+            position: relative;
+            transition: transform 0.3s ease;
+            text-align: center;
+        }
+        
+        .chat-feed {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            background: #ffffff;
+            backdrop-filter: blur(4px);
+            transition: background 0.3s;
+            font-family: 'Vazir', sans-serif;
+        }
+
+        .chat-feed::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .message {
+            max-width: 100%;
+            padding: 10px 12px;
+            border-radius: 20px;
+            position: relative;
+            word-wrap: break-word;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUp 0.3s forwards;
+            line-height: 1.6;
+            font-family: 'Vazir', sans-serif;
+            direction: rtl;
+            text-align: right;
+        }
+
+        /* ========== استایل‌های Markdown پیشرفته ========== */
+        .message p { margin: 0 0 8px 0; }
+        .message p:last-child { margin-bottom: 0; }
+        .message strong, .message b { font-weight: 700; color: inherit; }
+        .message em, .message i { font-style: italic; }
+        .message ul, .message ol { margin: 8px 25px 8px 0; padding: 0; }
+        .message li { margin-bottom: 4px; }
+        .message a { color: #2196f3; text-decoration: none; border-bottom: 1px dashed #2196f3; }
+        .message a:hover { border-bottom-style: solid; }
+        .message blockquote { border-right: 4px solid #ffee00; margin: 10px 0; padding: 5px 15px 5px 5px; background-color: #f9f9f9; color: #555; border-radius: 4px; }
+        .message h1, .message h2, .message h3, .message h4 { font-weight: 700; margin: 15px 0 10px 0; line-height: 1.4; }
+        .message h1 { font-size: 1.4em; }
+        .message h2 { font-size: 1.3em; }
+        .message h3 { font-size: 1.2em; }
+        .message code { background-color: #f3f3f3; color: #d63384; padding: 2px 5px; border-radius: 4px; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.9em; direction: ltr; display: inline-block; }
+        .message pre { background-color: #282c34; color: #abb2bf; padding: 15px; border-radius: 8px; overflow-x: auto; margin: 10px 0; direction: ltr; text-align: left; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.9em; border: 1px solid #ddd; }
+        .message pre code { background-color: transparent; color: inherit; padding: 0; display: block; border-radius: 0; }
+        .message.no-anim { opacity: 1; transform: translateY(0); animation: none; }
+        
+        .message.user {
+            align-self: flex-end;
+            background: transparent;
+            color: #000000;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+            direction: ltr;
+        }
+        
+        .message.bot {
+            background: transparent;
+            color: #000000;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            margin: 5px 0;
+            font-size: 1.05em;
+            line-height: 1.8;
+        }
+
+        .typing {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Vazir', sans-serif;
+            direction: rtl;
+        }
+        
+        .typing span {
+            width: 8px;
+            height: 8px;
+            background: #ccc;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+        
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        
+        .chat-input-area {
+            display: none;
+            padding: 7px;
+            padding-bottom: calc(7px + env(safe-area-inset-bottom, 0px));
+            margin-bottom: 12px;
+            border-top: 1px solid #ddd;
+            background: #fff;
+            align-items: flex-end;
+            gap: 8px;
+            font-family: 'Vazir', sans-serif;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+        
+        .chat-input-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 45px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 5px 10px;
+            background: #fff;
+            font-family: 'Vazir', sans-serif;
+            min-width: 0;
+            transition: background 0.3s, border 0.3s;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            gap: 5px;
+        }
+        
+        .chat-input-wrapper input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 1em;
+            font-family: 'Vazir', sans-serif;
+            direction: rtl;
+            min-height: 35px;
+            background: transparent;
+            color: #000000;
+        }
+        
+        .chat-input-wrapper button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            font-family: 'Vazir', sans-serif;
+            transition: color 0.3s;
+        }
+        
+        .chat-input-wrapper button:hover { color: #000; }
+
+        /* استایل دکمه میکروفون */
+        .mic-btn {
+            color: #555;
+            transition: all 0.3s ease;
+        }
+        .mic-btn.recording {
+            color: #ff0000 !important;
+            animation: pulse-red 1.5s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+        }
+        
+        .send-btn {
+            width: 45px;
+            height: 45px;
+            border: none;
+            border-radius: 50%;
+            background: #ffee00;
+            color: #000000;
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s; 
+            font-family: 'Vazir', sans-serif;
+            flex-shrink: 0;
+        }
+        
+        .send-btn:hover { background: #ffff0080; }
+        
+        @keyframes slideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes blink {
+            0%, 80%, 100% { opacity: 0; }
+            40% { opacity: 1; }
+        }
+
+        .profile-section {
+            background-color: #ffffff;
+            text-align: center;
+            padding: 10px 0 30px 0;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        .profile-circle {
+            background-color: #f5f5f5;
+            color: #000000;
+            width: 200px;
+            height: 200px;
+            line-height: 200px;
+            border-radius: 50%;
+            margin: 0 auto 20px auto;
+            font-size: 1.1em;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .login-btn {
+            background-color: #ffee00;
+            color: #000000;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: 0.3s;
+            font-family: 'Vazir', sans-serif;
+        }
+
+        .login-btn:hover { background-color: #ffee006e; }
+
+        .history-section {
+            padding: 10px 0;
+            border-top: 1px solid #eee;
+            margin-top: 10px;
+            display: block; 
+            transition: border 0.3s;
+        }
+
+        .history-label {
+            padding: 0 30px;
+            font-size: 0.9em;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding-bottom: 20px;
+            overflow: visible;
+        }
+        
+        .history-item {
+            padding: 8px 15px 8px 10px;
+            cursor: pointer;
+            color: #333;
+            transition: 0.3s;
+            font-size: 0.95em;
+            border-right: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .history-item:hover { background-color: #f9f9f9; }
+
+        .history-item.active {
+            background-color: #fffde7;
+            border-right: 3px solid #ffee00;
+            font-weight: bold;
+        }
+
+        .history-title {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-left: 10px;
+            text-align: right;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .history-menu-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.5;
+            transition: 0.2s;
+            color: #000;
+            flex-shrink: 0;
+        }
+
+        .history-menu-btn:hover { background-color: #e0e0e0; opacity: 1; }
+
+        .history-context-menu {
+            display: none;
+            position: fixed; 
+            background-color: #ffffff;
+            border: 1px solid #eee;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            z-index: 2005;
+            width: 160px;
+            flex-direction: column;
+            padding: 5px 0;
+            animation: fadeIn 0.2s ease;
+            direction: rtl;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .history-context-menu.show { display: flex; }
+
+        .dropdown-item {
+            padding: 10px 15px;
+            font-size: 0.9em;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+            font-weight: normal;
+        }
+
+        .dropdown-item:hover { background-color: #f5f5f5; }
+
+        .dropdown-item svg {
+            width: 16px;
+            height: 16px;
+            stroke-width: 1.5;
+            color: #666;
+        }
+
+        .dropdown-item.delete { color: #d32f2f; }
+        .dropdown-item.delete svg { color: #d32f2f; }
+        .dropdown-item.delete:hover { background-color: #ffebee; }
+
+        .pinned-icon { width: 14px; height: 14px; color: #666; }
+
+        .menu-items { margin-top: 10px; margin-bottom: 20px; }
+
+        .menu-items a {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 20px;
+            text-decoration: none;
+            font-size: 1.1em;
+            color: #000;
+            transition: 0.2s;
+            border-bottom: 1px solid #f2f2f2;
+        }
+
+        .menu-items a svg {
+            width: 24px;
+            height: 24px;
+            stroke-width: 1.5;
+            flex-shrink: 0;
+        }
+
+        .menu-items a:hover { background-color: #ffee00; }
+
+        .sidenav {
+            height: 100%;
+            width: 290px;
+            position: fixed;
+            top: 0;
+            right: -290px;
+            background-color: #ffffff;
+            overflow-y: auto; 
+            overflow-x: hidden;
+            transition: 0.4s ease;
+            z-index: 1000;
+            direction: rtl;
+            font-family: 'Vazir', sans-serif;
+            border-left: 1px solid #ddd;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            display: block; 
+        }
+
+        .sidenav::-webkit-scrollbar { display: none; }
+        .sidenav.open { right: 0; }
+        
+        .sidenav .closebtn {
+            float: none; 
+            width: 100%;
+            font-size: 40px;
+            cursor: pointer;
+            color: #000000;
+            font-family: 'Vazir', sans-serif;
+            background: none;
+            border: none;
+            padding: 15px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px); /* افکت شیشه‌ای */
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show { display: flex; opacity: 1; }
+
+        .modal-content {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: right;
+            direction: rtl;
+            font-family: 'Vazir', sans-serif;
+        }
+
+        .modal-overlay.show .modal-content { transform: scale(1); }
+
+        .modal-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #000;
+        }
+
+        .modal-message {
+            color: #555;
+            margin-bottom: 20px;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-family: 'Vazir', sans-serif;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            outline: none;
+            transition: border-color 0.2s;
+            background-color: #f9f9f9;
+        }
+
+        .modal-input:focus {
+            border-color: #ffee00;
+            background-color: #fff;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-family: 'Vazir', sans-serif;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .modal-btn.cancel { background-color: #f0f0f0; color: #555; }
+        .modal-btn.cancel:hover { background-color: #e0e0e0; color: #000; }
+        .modal-btn.confirm { background-color: #ffee00; color: #000; }
+        .modal-btn.confirm:hover { background-color: #ffdd00; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(255, 221, 0, 0.3); }
+
+        /* ========== START INPUT BOX STYLES ========== */
+        #start-input-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 550px;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: space-between;
+            border: 1px solid #ccc;
+            border-radius: 30px;
+            padding: 7px 7px;
+            background: #ffffff;
+            box-shadow: 0px 0px 20px 2px #ffee0096;
+            z-index: 999;
+            font-family: 'Vazir', sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        #start-input {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 1.2em;
+            background: transparent;
+            direction: rtl;
+            font-family: 'Vazir', sans-serif;
+            padding: 6px 10px;
+            resize: none;
+            flex-grow: 1;
+            margin-bottom: 5px;
+            line-height: 1.5;
+            height: 45px;
+            color: #000000;
+        }
+
+        #start-input::placeholder { color: #868585; }
+        
+        .start-footer {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            width: 100%;
+        }
+
+        .start-buttons-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #start-send-btn {
+            background: #ffee00;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Vazir', sans-serif;
+            transition: background 0.3s;
+        }
+        
+        #start-send-btn:hover { background: #ffdd00; }
+        
+        #start-attach-btn {
+            background: #ffffff;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #424242;
+            transition: all 0.3s;
+        }
+
+        #start-mic-btn {
+            background: #ffffff;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            /* justify-content: center; */
+            color: #424242;
+            transition: all 0.3s;
+        }
+        
+        #start-attach-btn:hover, #start-mic-btn:hover { color: #ffee00; }
+
+        .persian-text {
+            font-family: 'Vazir', sans-serif;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .bot-message-container {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+
+        .user-message-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-bottom: 10px;
+        }
+
+        .message-icons-container {
+            display: flex;
+            margin-top: 1px;
+        }
+
+        .user-message-container .message-icons-container {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .user-message-container:hover .message-icons-container,
+        .user-message-container .message-icons-container.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .message-icons-container button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #000000;
+            font-size: 20px;
+            transition: 0.3s;
+            padding: 3px;
+            background: transparent !important;
+        }
+
+        .message-icons-container button:hover {
+            color: #ffee00;
+            background: transparent !important;
+        }
+
+        .message-icons-container button:hover svg g path { fill: #ffee00 !important; }
+        .message-icons-container button:hover svg#edit_24 path { stroke: #ffee00 !important; }
+        .message-icons-container button svg#edit_24 rect { display: none !important; }
+
+        .edit-message-container {
+            width: 100%;
+            margin: 10px 0;
+            animation: slideUp 0.3s forwards;
+        }
+
+        .edit-input-wrapper {
+            width: 100%;
+            background: #fff;
+            border: 2px solid #ffee00;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .edit-textarea {
+            width: 100%;
+            border: none;
+            outline: none;
+            resize: none;
+            font-size: 1.1em;
+            font-family: 'Vazir', sans-serif;
+            direction: rtl;
+            line-height: 1.6;
+            min-height: 100px;
+            background: transparent;
+            color: #000000;
+        }
+
+        .edit-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .edit-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Vazir', sans-serif;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .confirm-btn { background: #ffee00; color: #000000; }
+        .confirm-btn:hover { background: #ffdd00; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(255, 238, 0, 0.3); }
+        .cancel-btn { background: #f5f5f5; color: #666; border: 1px solid #ddd; }
+        .cancel-btn:hover { background: #e5e5e5; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+
+        @media (min-width: 768px) {
+            .chat-feed { padding: 20px; max-width: 800px; margin: 0 auto; width: 100%; }
+            .chat-input-area { max-width: 800px; margin: 0 auto 12px auto; width: 100%; padding: 15px 20px; }
+            #start-input-container { max-width: 600px; }
+            .edit-input-wrapper { max-width: 800px; margin: 0 auto; }
+        }
+
+        @media (min-width: 1200px) {
+            .chat-feed { max-width: 900px; }
+            .chat-input-area { max-width: 900px; }
+            .edit-input-wrapper { max-width: 900px; }
+        }
+        
+        .new-chat-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #ffee00;
+            color: #000000;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: 0.3s;
+            font-family: 'Vazir', sans-serif;
+            margin: 15px auto;
+            width: calc(100% - 60px);
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .new-chat-btn:hover {
+            background-color: #ffdd00;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(255, 238, 0, 0.3);
+        }
+
+        /* ============= FILE PREVIEW STYLES ============= */
+        .file-preview-area {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 5px;
+            white-space: nowrap;
+            width: 100%;
+            max-width: 100%;
+            display: none;
+            margin-bottom: 5px;
+            scrollbar-width: thin; 
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .file-preview-area::-webkit-scrollbar { height: 4px; }
+        .file-preview-area::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+        .file-preview-area.active { display: flex; }
+
+        .preview-item { position: relative; display: inline-block; flex-shrink: 0; }
+
+        .preview-img {
+            height: 60px;
+            width: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background: #f0f0f0;
+        }
+        
+        .preview-file-icon {
+            height: 60px;
+            width: 60px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            color: #555;
+            text-align: center;
+            overflow: hidden;
+            padding: 2px;
+        }
+
+        .remove-file {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4444;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            border: 2px solid #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .remove-file:hover { background: #cc0000; }
+
+        .chat-images-container {
+            display: flex;
+            gap: 5px;
+            overflow-x: auto;
+            white-space: nowrap;
+            max-width: 100%;
+            margin-bottom: 0 !important;
+        }
+        .chat-images-container::-webkit-scrollbar { height: 4px; }
+        .chat-images-container::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+        .user-text-bubble {
+            background: #ffee00;
+            padding: 10px 12px;
+            border-radius: 20px;
+            border-bottom-right-radius: 4px;
+            color: #000000;
+            text-align: right;
+            direction: rtl;
+            word-wrap: break-word;
+            line-height: 1.6;
+            max-width: 100%;
+            font-family: 'Vazir', sans-serif;
+        }
+
+        /* ============= TOAST NOTIFICATION STYLES ============= */
+        #toast-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 4000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast-notification {
+            background-color: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-family: 'Vazir', sans-serif;
+            font-size: 0.95em;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: auto;
+            direction: rtl;
+        }
+
+        .toast-notification.show { opacity: 1; transform: translateY(0); }
+        .toast-notification.error { background-color: #d32f2f; }
+        .toast-notification.success { background-color: #43a047; }
+        .toast-icon { display: flex; align-items: center; justify-content: center; }
+
+        /* ============ DARK MODE STYLES ============ */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .chat-container,
+        body.dark-mode .chat-feed {
+            background: #121212;
+        }
+
+        body.dark-mode .chat-header { background: #121212; color: #ffffff; }
+        body.dark-mode #menu-toggle { color: #ffee00; }
+        body.dark-mode .sidenav { background-color: #1e1e1e; border-left: 1px solid #333; color: #e0e0e0; }
+        body.dark-mode .sidenav .closebtn { color: #fff; }
+        body.dark-mode .menu-items a { color: #e0e0e0; border-bottom: 1px solid #333; }
+        body.dark-mode .menu-items a:hover { background-color: #333; }
+        body.dark-mode .profile-section { background-color: #1e1e1e; }
+        body.dark-mode .profile-circle { background-color: #333; color: #fff; }
+        body.dark-mode .history-section { border-top: 1px solid #333; }
+        body.dark-mode .history-item { color: #ccc; }
+        body.dark-mode .history-item:hover { background-color: #2c2c2c; }
+        body.dark-mode .history-item.active { background-color: #333; color: #ffee00; }
+        body.dark-mode .history-menu-btn { color: #fff; }
+        body.dark-mode .history-menu-btn:hover { background-color: #444; }
+        body.dark-mode .chat-input-area { background: #121212; border-top: 1px solid #333; }
+        body.dark-mode .chat-input-wrapper { background: #121212; border: 1px solid #333; }
+        body.dark-mode .chat-input-wrapper input { color: #fff; }
+        body.dark-mode .chat-input-wrapper button { color: #aaa; }
+        body.dark-mode .chat-input-wrapper button:hover { color: #fff; }
+        body.dark-mode .message.bot { color: #e0e0e0; }
+        body.dark-mode .message-icons-container button { color: #aaa; }
+        body.dark-mode .message-icons-container button:hover { color: #ffee00; }
+        body.dark-mode #start-input-container { background: #121212; border: 1px solid #333; }
+        body.dark-mode #start-input { color: #fff; }
+        body.dark-mode #start-attach-btn, body.dark-mode #start-mic-btn { background: #121212; color: #ffee00; }
+        body.dark-mode #start-attach-btn:hover, body.dark-mode #start-mic-btn:hover { color: #fff; }
+        body.dark-mode #attach-btn, body.dark-mode #mic-btn { background: #121212; color: #ffee00; }
+        body.dark-mode #attach-btn:hover, body.dark-mode #mic-btn:hover { color: #fff; }
+        body.dark-mode .modal-content { background-color: #1e1e1e; }
+        body.dark-mode .modal-title { color: #fff; }
+        body.dark-mode .modal-message { color: #ccc; }
+        body.dark-mode .modal-input { background-color: #2c2c2c; border-color: #444; color: #fff; }
+        body.dark-mode .modal-btn.cancel { background-color: #333; color: #ccc; }
+        body.dark-mode .modal-btn.cancel:hover { background-color: #444; color: #fff; }
+        body.dark-mode .history-context-menu { background-color: #1e1e1e; border-color: #333; }
+        body.dark-mode .dropdown-item { color: #ccc; }
+        body.dark-mode .dropdown-item:hover { background-color: #2c2c2c; }
+        body.dark-mode .preview-img, body.dark-mode .preview-file-icon { border-color: #444; background: #2c2c2c; color: #fff; }
+        body.dark-mode .edit-input-wrapper { background: #121212; border: 2px solid #ffee00; }
+        body.dark-mode .edit-textarea { color: #fff; }
+        body.dark-mode .cancel-btn { background: #333; color: #ccc; border: 1px solid #444; }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <img src="logo1.png" width="110px" alt="ChatBot Logo" onerror="this.style.display='none'; this.insertAdjacentHTML('afterend', '<span>ChatBot</span>')">
+            <button id="menu-toggle">☰</button>
+        </header>
+
+        <main id="chat-feed" class="chat-feed"></main>
+
+        <div id="mySidenav" class="sidenav">
+            <!-- دکمه بستن اکنون بخشی از جریان اسکرول است -->
+            <button class="closebtn">✕</button>
+            
+            <div class="profile-section">
+              <div class="profile-circle">پروفایل</div>
+              <button class="login-btn">ورود |  ثبت نام</button>
+            </div>
+            
+            <button class="new-chat-btn" id="new-chat-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                چت جدید
+            </button>
+
+            <!-- HISTORY LIST SECTION -->
+            <div class="history-section">
+                <div class="history-label">چت‌های قبلی</div>
+                <div id="history-list" class="history-list">
+                    <!-- History items will be injected here via JS -->
+                </div>
+            </div>
+
+            <div class="menu-items">
+                <a href="#">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    پروفایل من
+                </a>
+                <a href="#">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    گروه جدید
+                </a>
+                <a href="#">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    مخاطبین
+                </a>
+                <a href="#">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    تماس‌ها
+                </a>
+                <a href="#">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                    پیام‌های ذخیره‌شده
+                </a>
+                <a href="#">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    تنظیمات
+                </a>
+                <a href="#">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                    دعوت از دوستان
+                </a>
+                <a href="#">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    قابلیت‌های تلگرام
+                </a>
+                <a href="#" id="dark-mode-toggle">
+                     <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                     <span id="theme-text">حالت شب</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Global History Context Menu -->
+        <div id="global-history-menu" class="history-context-menu">
+             <div class="dropdown-item" id="menu-pin-btn" onclick="togglePinCurrentSession()">
+                <svg id="menu-pin-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>
+                <span id="menu-pin-text">پین کردن</span>
+             </div>
+             <div class="dropdown-item" onclick="renameCurrentSession()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                تغییر نام
+             </div>
+             <div class="dropdown-item" onclick="shareCurrentSession()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                اشتراک
+             </div>
+             <div class="dropdown-item delete" onclick="deleteCurrentSession()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                حذف
+             </div>
+        </div>
+
+        <!-- Custom Modal for Alerts/Prompts -->
+        <div id="custom-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div id="modal-title" class="modal-title"></div>
+                <div id="modal-message" class="modal-message"></div>
+                <input type="text" id="modal-input" class="modal-input" autocomplete="off">
+                <div class="modal-footer">
+                    <button id="modal-cancel-btn" class="modal-btn cancel">لغو</button>
+                    <button id="modal-confirm-btn" class="modal-btn confirm">تایید</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
+
+        <!-- Start Input Middle Screen -->
+        <div id="start-input-container">
+            <!-- NEW PREVIEW AREA FOR START SCREEN -->
+            <div id="start-file-preview" class="file-preview-area"></div>
+
+            <textarea id="start-input" placeholder="پیام خود را اینجا بنویسید..."></textarea>
+            
+            <div class="start-footer">
+                <div class="start-buttons-group">
+                    <button id="start-send-btn" class="start-btn" title="ارسال">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V3.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4-.007-.007a.498.498 0 0 0-.7.007l-4 4a.5.5 0 1 0 .708.708L7.5 3.707V14.5A.5.5 0 0 0 8 15"/>
+                        </svg>
+                    </button>
+
+                    <button id="start-attach-btn" title="پیوست فایل">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 4a.5.5 0 0 1 .5.5V7.5H11.5a.5.5 0 0 1 0 1H8.5V11.5a.5.5 0 0 1-1 0V8.5H4.5a.5.5 0 0 1 0-1H7.5V4.5A.5.5 0 0 1 8 4"/>
+                        </svg>
+                    </button>
+                    <!-- دکمه میکروفون جدید -->
+                    <button id="start-mic-btn" class="mic-btn" title="تایپ صوتی">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </button>
+                    <!-- Added multiple attribute -->
+                    <input type="file" id="start-file-input" style="display:none" multiple>
+                </div>
+            </div>
+        </div>
+
+        <form id="chat-form" class="chat-input-area">
+            <button type="submit" class="send-btn" id="send-btn" title="Send">
+                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" viewBox="0 0 16 16" id="send-icon">
+                    <path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V3.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4-.007-.007a.498.498 0 0 0-.7.007l-4 4a.5.5 0 1 0 .708.708L7.5 3.707V14.5A.5.5 0 0 0 8 15"/>
+                </svg>
+            </button>
+
+            <div class="chat-input-wrapper">
+                <!-- NEW PREVIEW AREA FOR MAIN INPUT -->
+                <div id="file-preview" class="file-preview-area"></div>
+
+                <div class="input-row">
+                    <button type="button" id="attach-btn" title="Attach file">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 4a.5.5 0 0 1 .5.5V7.5H11.5a.5.5 0 0 1 0 1H8.5V11.5a.5.5 0 0 1-1 0V8.5H4.5a.5.5 0 0 1 0-1H7.5V4.5A.5.5 0 0 1 8 4"/>
+                        </svg>
+                    </button>
+                    <!-- دکمه میکروفون جدید -->
+                    <button type="button" id="mic-btn" class="mic-btn" title="تایپ صوتی">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </button>
+    
+                    <input type="text" id="user-input" placeholder="پیام خود را وارد کنید" autocomplete="off">
+                    <!-- Added multiple attribute -->
+                    <input type="file" id="file-input" style="display:none" multiple>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const chatFeed = document.getElementById("chat-feed");
+        const chatForm = document.getElementById("chat-form");
+        const userInput = document.getElementById("user-input");
+        const menuToggle = document.getElementById("menu-toggle");
+        const sidenav = document.getElementById("mySidenav");
+        const closeBtn = document.querySelector(".sidenav .closebtn"); 
+        const attachBtn = document.getElementById("attach-btn");
+        const fileInput = document.getElementById("file-input");
+        const sendBtn = document.getElementById("send-btn");
+        const sendIcon = document.getElementById("send-icon");
+        const startInputContainer = document.getElementById("start-input-container");
+        const startInput = document.getElementById("start-input");
+        const startSendBtn = document.getElementById("start-send-btn");
+        const newChatBtn = document.getElementById("new-chat-btn");
+        const startAttachBtn = document.getElementById("start-attach-btn");
+        const startFileInput = document.getElementById("start-file-input");
+        const historyListEl = document.getElementById("history-list");
+        const globalMenu = document.getElementById("global-history-menu");
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const startMicBtn = document.getElementById('start-mic-btn');
+        const micBtn = document.getElementById('mic-btn');
+
+        // Preview Containers
+        const mainPreview = document.getElementById("file-preview");
+        const startPreview = document.getElementById("start-file-preview");
+
+        // Modal Elements
+        const customModal = document.getElementById('custom-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalInput = document.getElementById('modal-input');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+        let stopResponse = false;
+        let currentInterval = null;
+        let messageHistory = [];
+        let isMenuOpen = false;
+        let currentEditContainer = null;
+        let currentEditData = null;
+        let activeMenuSessionId = null; 
+        let currentModalConfirmCallback = null;
+
+        // ====== DARK MODE LOGIC ======
+        // Updated to handle icon preservation
+        const themeText = document.getElementById('theme-text');
+        const themeIcon = document.getElementById('theme-icon');
+
+        if (localStorage.getItem('theme') === 'dark') {
+            enableDarkMode();
+        }
+
+        function enableDarkMode() {
+            document.body.classList.add('dark-mode');
+            if(themeText) themeText.textContent = 'حالت روز';
+            // Change icon to Sun
+            if(themeIcon) themeIcon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+        }
+
+        function disableDarkMode() {
+            document.body.classList.remove('dark-mode');
+            if(themeText) themeText.textContent = 'حالت شب';
+            // Change icon to Moon
+            if(themeIcon) themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+        }
+
+        if(darkModeToggle) {
+            darkModeToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (document.body.classList.contains('dark-mode')) {
+                    disableDarkMode();
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    enableDarkMode();
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        }
+
+        // ====== SPEECH RECOGNITION SETUP ======
+        let recognition;
+        let isRecording = false;
+
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'fa-IR'; // پیش‌فرض فارسی
+
+            recognition.onstart = function() {
+                isRecording = true;
+                updateMicUI(true);
+            };
+
+            recognition.onend = function() {
+                isRecording = false;
+                updateMicUI(false);
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                if (startInputContainer.style.display !== 'none') {
+                    startInput.value += transcript + " ";
+                    startInput.focus();
+                } else {
+                    userInput.value += transcript + " ";
+                    userInput.focus();
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Speech recognition error", event.error);
+                isRecording = false;
+                updateMicUI(false);
+                showToast("خطا در تشخیص صدا: " + event.error, "error");
+            };
+        } else {
+            console.log("Web Speech API not supported");
+            if(startMicBtn) startMicBtn.style.display = 'none';
+            if(micBtn) micBtn.style.display = 'none';
+        }
+
+        function toggleRecording() {
+            if (!recognition) return;
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        function updateMicUI(recording) {
+            const btns = [startMicBtn, micBtn];
+            btns.forEach(btn => {
+                if (recording) {
+                    btn.classList.add('recording');
+                } else {
+                    btn.classList.remove('recording');
+                }
+            });
+        }
+
+        if(startMicBtn) startMicBtn.addEventListener('click', toggleRecording);
+        if(micBtn) micBtn.addEventListener('click', toggleRecording);
+
+
+        // ====== TOAST NOTIFICATION FUNCTION ======
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            
+            let iconSvg = '';
+            if (type === 'error') {
+                iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+            } else if (type === 'success') {
+                iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+            }
+
+            toast.innerHTML = `
+                <span class="toast-icon">${iconSvg}</span>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Trigger reflow
+            void toast.offsetWidth; 
+            
+            toast.classList.add('show');
+            
+            // حذف خودکار بعد از 3 ثانیه
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300); // صبر برای انیمیشن خروج
+            }, 3000);
+        }
+
+        // ====== FILE MANAGEMENT VARIABLES ======
+        let selectedFiles = []; // Array to store selected File objects
+
+        // ====== HISTORY MANAGEMENT ======
+        let currentSessionId = Date.now().toString(); 
+        let allSessions = JSON.parse(localStorage.getItem('chatSessions')) || {}; 
+
+        // ====== MARKDOWN PARSER (Using marked.js) ======
+        function parseMarkdown(text) {
+            if (!text) return "";
+            try {
+                // تنظیمات marked
+                marked.setOptions({
+                    breaks: true, // تبدیل خط جدید به <br>
+                    gfm: true     // فعال‌سازی GitHub Flavored Markdown
+                });
+                
+                // تبدیل مارک‌داون به HTML
+                const rawHtml = marked.parse(text);
+                
+                // پاکسازی HTML برای امنیت (جلوگیری از XSS)
+                // اگر DOMPurify لود نشده باشد (در صورت قطعی اینترنت)، از خام استفاده میکند
+                if (typeof DOMPurify !== 'undefined') {
+                    return DOMPurify.sanitize(rawHtml);
+                }
+                return rawHtml;
+            } catch (e) {
+                console.error("Markdown parsing error:", e);
+                // فال‌بک به متن ساده در صورت خطا
+                return text;
+            }
+        }
+
+        function saveSession() {
+            if (messageHistory.length === 0) return;
+
+            let title = allSessions[currentSessionId]?.title || "گفتگوی جدید";
+            const firstUserMsg = messageHistory.find(m => m.role === 'user');
+            
+            if (firstUserMsg && (!allSessions[currentSessionId]?.title || allSessions[currentSessionId].title === "گفتگوی جدید")) {
+                title = firstUserMsg.content.substring(0, 30) + (firstUserMsg.content.length > 30 ? "..." : "");
+            }
+
+            let isPinned = false;
+            if (allSessions[currentSessionId] && allSessions[currentSessionId].pinned) {
+                isPinned = true;
+            }
+
+            allSessions[currentSessionId] = {
+                id: currentSessionId,
+                title: title,
+                messages: messageHistory,
+                timestamp: Date.now(),
+                pinned: isPinned
+            };
+            
+            localStorage.setItem('chatSessions', JSON.stringify(allSessions));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            historyListEl.innerHTML = '';
+            
+            const sortedSessions = Object.values(allSessions).sort((a, b) => {
+                if (a.pinned && !b.pinned) return -1;
+                if (!a.pinned && b.pinned) return 1;
+                return b.timestamp - a.timestamp;
+            });
+
+            if (sortedSessions.length === 0) {
+                historyListEl.innerHTML = '<div style="padding:10px 30px; font-size:0.8em; color:#999;">هنوز گفگتویی انجام نشده</div>';
+                return;
+            }
+
+            sortedSessions.forEach(session => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                if(session.id === currentSessionId) div.classList.add('active');
+                
+                div.innerHTML = `
+                    <div class="history-title" onclick="loadSession('${session.id}')">
+                        ${session.pinned ? '<svg class="pinned-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>' : ''}
+                        ${session.title}
+                    </div>
+                    <button class="history-menu-btn" onclick="showHistoryMenu(event, '${session.id}')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+                        </svg>
+                    </button>
+                `;
+                historyListEl.appendChild(div);
+            });
+        }
+
+        // Global Menu Handlers
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.history-menu-btn') && !e.target.closest('.history-context-menu')) {
+                globalMenu.classList.remove('show');
+            }
+        });
+
+        function showHistoryMenu(e, id) {
+            e.stopPropagation();
+            activeMenuSessionId = id;
+            
+            // Update Pin Button Text
+            const session = allSessions[id];
+            const pinText = document.getElementById('menu-pin-text');
+            if (session && session.pinned) {
+                pinText.textContent = 'برداشتن پین';
+            } else {
+                pinText.textContent = 'پین کردن';
+            }
+
+            // Position Menu
+            const buttonRect = e.currentTarget.getBoundingClientRect();
+            globalMenu.style.top = (buttonRect.bottom + 5) + 'px';
+            globalMenu.style.left = buttonRect.left + 'px';
+            
+            // Show
+            globalMenu.classList.add('show');
+        }
+
+        // Modal Functions
+        function showModal(type, title, message, defaultValue = '', onConfirm) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            
+            if (type === 'prompt') {
+                modalInput.style.display = 'block';
+                modalInput.value = defaultValue;
+                modalMessage.style.display = 'block';
+            } else {
+                modalInput.style.display = 'none';
+                modalMessage.style.display = 'block';
+            }
+
+            currentModalConfirmCallback = onConfirm;
+            
+            customModal.classList.add('show');
+            
+            if (type === 'prompt') {
+                setTimeout(() => modalInput.focus(), 100);
+            }
+        }
+
+        function closeModal() {
+            customModal.classList.remove('show');
+            currentModalConfirmCallback = null;
+        }
+
+        modalCancelBtn.addEventListener('click', closeModal);
+
+        modalConfirmBtn.addEventListener('click', () => {
+            if (currentModalConfirmCallback) {
+                if (modalInput.style.display !== 'none') {
+                    currentModalConfirmCallback(modalInput.value);
+                } else {
+                    currentModalConfirmCallback();
+                }
+            }
+            closeModal();
+        });
+
+        modalInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                modalConfirmBtn.click();
+            }
+        });
+
+        function togglePinCurrentSession() {
+            if (activeMenuSessionId && allSessions[activeMenuSessionId]) {
+                allSessions[activeMenuSessionId].pinned = !allSessions[activeMenuSessionId].pinned;
+                localStorage.setItem('chatSessions', JSON.stringify(allSessions));
+                renderHistory();
+            }
+            globalMenu.classList.remove('show');
+        }
+
+        function deleteCurrentSession() {
+            globalMenu.classList.remove('show');
+            if (!activeMenuSessionId) return;
+            
+            showModal('confirm', 'حذف گفتگو', 'آیا از حذف این گفتگو مطمئن هستید؟', '', () => {
+                const idToDelete = activeMenuSessionId;
+                delete allSessions[idToDelete];
+                localStorage.setItem('chatSessions', JSON.stringify(allSessions));
+                
+                if (idToDelete === currentSessionId) {
+                    // تغییر مهم: پاس دادن true به createNewChat برای نبستن منو
+                    createNewChat(true); 
+                } else {
+                    renderHistory();
+                }
+            });
+        }
+
+        function renameCurrentSession() {
+            globalMenu.classList.remove('show');
+            if (activeMenuSessionId && allSessions[activeMenuSessionId]) {
+                const currentTitle = allSessions[activeMenuSessionId].title;
+                showModal('prompt', 'تغییر نام', 'نام جدید را وارد کنید:', currentTitle, (newTitle) => {
+                      if (newTitle && newTitle.trim()) {
+                           allSessions[activeMenuSessionId].title = newTitle.trim();
+                           localStorage.setItem('chatSessions', JSON.stringify(allSessions));
+                           renderHistory();
+                      }
+                });
+            }
+        }
+
+        function shareCurrentSession() {
+           if (activeMenuSessionId && allSessions[activeMenuSessionId]) {
+               const session = allSessions[activeMenuSessionId];
+               let text = `Chat: ${session.title}\n\n`;
+               session.messages.forEach(msg => {
+                   text += `${msg.role === 'user' ? 'User' : 'Bot'}: ${msg.content}\n`;
+               });
+               
+               navigator.clipboard.writeText(text).then(() => {
+                   alert('محتوای چت در کلیپ‌بورد کپی شد!');
+               });
+           }
+           globalMenu.classList.remove('show');
+        }
+
+        function loadSession(id) {
+            if (id === currentSessionId) {
+                closeNav();
+                return;
+            }
+
+            currentSessionId = id;
+            messageHistory = allSessions[id].messages || [];
+            selectedFiles = []; // Clear files on session change
+            renderPreviews(mainPreview);
+            renderPreviews(startPreview);
+            
+            chatFeed.innerHTML = '';
+            startInputContainer.style.display = 'none';
+            chatForm.style.display = 'flex';
+            
+            stopResponse = false;
+            if (currentInterval) clearInterval(currentInterval);
+
+            messageHistory.forEach(msg => {
+                const sender = msg.role === 'user' ? 'user' : 'bot';
+                addMessage(msg.content, sender, true);
+            });
+
+            closeNav();
+            renderHistory();
+        }
+        // ===================================
+
+        function handleOutsideClick(event) {
+            if (currentEditContainer && !currentEditContainer.contains(event.target)) {
+                const { messageContainer, editContainer, messageElement, iconsContainer } = currentEditData;
+                cancelEdit(messageContainer, editContainer, messageElement, iconsContainer);
+            }
+        }
+
+        function editUserMessage(messageContainer) {
+            const messageElement = messageContainer.querySelector('.message');
+            const iconsContainer = messageContainer.querySelector('.message-icons-container');
+            // USE RAW TEXT IF AVAILABLE
+            const originalText = messageElement.dataset.rawText || messageElement.textContent;
+
+            messageElement.style.display = 'none';
+            if (iconsContainer) {
+                iconsContainer.style.display = 'none';
+            }
+
+            const editContainer = document.createElement('div');
+            editContainer.classList.add('edit-message-container');
+            editContainer.innerHTML = `
+                <div class="edit-input-wrapper">
+                    <textarea class="edit-textarea" placeholder="پیام خود را ویرایش کنید...">${originalText}</textarea>
+                    <div class="edit-buttons">
+                        <button class="edit-btn cancel-btn" type="button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                            لغو
+                        </button>
+                        <button class="edit-btn confirm-btn" type="button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 6L9 17l-5-5"/>
+                            </svg>
+                            تایید
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            messageContainer.appendChild(editContainer);
+            currentEditContainer = editContainer;
+            
+            currentEditData = {
+                messageContainer,
+                editContainer,
+                messageElement,
+                iconsContainer
+            };
+
+            document.addEventListener('mousedown', handleOutsideClick);
+
+            const textarea = editContainer.querySelector('.edit-textarea');
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+            });
+
+            editContainer.querySelector('.confirm-btn').addEventListener('click', function() {
+                confirmEdit(messageContainer, editContainer, textarea.value, messageElement, iconsContainer);
+            });
+
+            editContainer.querySelector('.cancel-btn').addEventListener('click', function() {
+                cancelEdit(messageContainer, editContainer, messageElement, iconsContainer);
+            });
+
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    cancelEdit(messageContainer, editContainer, messageElement, iconsContainer);
+                }
+            });
+        }
+
+        function confirmEdit(messageContainer, editContainer, newText, messageElement, iconsContainer) {
+            const originalText = messageElement.dataset.rawText || messageElement.textContent;
+            
+            if (newText.trim() === '') {
+                alert('پیام نمی‌تواند خالی باشد!');
+                return;
+            }
+
+            document.removeEventListener('mousedown', handleOutsideClick);
+
+            // Update content and raw text
+            messageElement.dataset.rawText = newText.trim();
+            
+            // حفظ تصاویر هنگام ویرایش متن
+            const imagesContainer = messageElement.querySelector('.chat-images-container');
+            messageElement.innerHTML = ''; // پاک کردن محتوا برای بازنویسی
+            
+            // اگر تصویر وجود داشت، اول آن را اضافه کن
+            if (imagesContainer) {
+                messageElement.appendChild(imagesContainer);
+            }
+
+            // ایجاد حباب متن جدید
+            const textBubble = document.createElement("div");
+            textBubble.className = "user-text-bubble";
+            textBubble.innerHTML = parseMarkdown(newText.trim());
+            messageElement.appendChild(textBubble);
+
+            messageElement.style.display = 'flex'; // نمایش مجدد پیام
+
+            editContainer.remove();
+
+            if (iconsContainer) {
+                iconsContainer.style.display = 'flex';
+            }
+
+            currentEditContainer = null;
+            currentEditData = null;
+
+            const messageIndex = messageHistory.findIndex(msg => 
+                msg.role === "user" && msg.content === originalText
+            );
+
+            if (messageIndex !== -1) {
+                const messagesToRemove = messageHistory.length - messageIndex - 1;
+                messageHistory.splice(messageIndex + 1, messagesToRemove);
+                messageHistory[messageIndex].content = newText.trim();
+                
+                saveSession();
+
+                const allContainers = Array.from(chatFeed.querySelectorAll('.bot-message-container, .user-message-container'));
+                const currentIndex = allContainers.indexOf(messageContainer);
+                
+                if (currentIndex !== -1) {
+                    const containersToRemove = allContainers.slice(currentIndex + 1);
+                    containersToRemove.forEach(container => container.remove());
+                }
+
+                setSendButtonToStop();
+                stopResponse = false;
+                const typing = showTypingIndicator();
+                sendToAPI(newText.trim(), typing);
+            }
+        }
+
+        function cancelEdit(messageContainer, editContainer, messageElement, iconsContainer) {
+            document.removeEventListener('mousedown', handleOutsideClick);
+            editContainer.remove();
+            messageElement.style.display = 'block';
+            if (iconsContainer) {
+                iconsContainer.style.display = 'flex';
+            }
+            currentEditContainer = null;
+            currentEditData = null;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log('متن با موفقیت کپی شد');
+            }).catch(err => {
+                console.error('خطا در کپی کردن متن: ', err);
+            });
+        }
+
+        function regenerateBotResponse(messageContainer) {
+            const lastUserMessage = messageHistory
+                .slice()
+                .reverse()
+                .find(msg => msg.role === "user");
+            
+            if (!lastUserMessage) {
+                console.log("هیچ پیام کاربری برای جنریت دوباره پیدا نشد");
+                return;
+            }
+
+            messageContainer.remove();
+
+            for (let i = messageHistory.length - 1; i >= 0; i--) {
+                if (messageHistory[i].role === "assistant") {
+                    messageHistory.splice(i, 1);
+                    break;
+                }
+            }
+            
+            saveSession();
+
+            setSendButtonToStop();
+            stopResponse = false;
+            const typing = showTypingIndicator();
+
+            sendToAPI(lastUserMessage.content, typing);
+        }
+
+        chatFeed.addEventListener('click', function(e) {
+            // Copy logic
+            if (e.target.closest('button[title="کپی متن"]')) {
+                const messageContainer = e.target.closest('.bot-message-container, .user-message-container');
+                if (messageContainer) {
+                    const messageElement = messageContainer.querySelector('.message');
+                    // Copy raw text if available, otherwise textContent
+                    const textToCopy = messageElement.dataset.rawText || messageElement.textContent;
+                    copyToClipboard(textToCopy);
+                    
+                    const copyButton = e.target.closest('button');
+                    const originalHTML = copyButton.innerHTML;
+                    // Visual feedback
+                    copyButton.style.color = "#43a047";
+                    setTimeout(() => {
+                        copyButton.innerHTML = originalHTML;
+                        copyButton.style.color = "";
+                    }, 1000);
+                }
+            }
+            
+            if (e.target.closest('button[title="جنریت دوباره"]')) {
+                const messageContainer = e.target.closest('.bot-message-container');
+                if (messageContainer) {
+                    regenerateBotResponse(messageContainer);
+                }
+            }
+            
+            if (e.target.closest('button[title="ادیت متن"]')) {
+                const messageContainer = e.target.closest('.user-message-container');
+                if (messageContainer && !currentEditContainer) {
+                    editUserMessage(messageContainer);
+                }
+            }
+        });
+
+        function openNav() {
+            sidenav.classList.add("open");
+            document.body.style.overflow = "hidden";
+            // اینجا تغییر ایجاد شد: مخفی کردن دکمه اصلی به جای تغییر متن
+            menuToggle.style.visibility = "hidden"; 
+            isMenuOpen = true;
+            renderHistory();
+        }
+
+        function closeNav() {
+            sidenav.classList.remove("open");
+            document.body.style.overflow = "hidden";
+            // نمایش دوباره دکمه اصلی
+            menuToggle.style.visibility = "visible";
+            isMenuOpen = false;
+        }
+
+        menuToggle.addEventListener("click", function() {
+            if (isMenuOpen) {
+                closeNav();
+            } else {
+                openNav();
+            }
+        });
+
+        // اتصال رویداد کلیک برای دکمه بستن داخل منو
+        if(closeBtn) {
+            closeBtn.addEventListener("click", closeNav);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isMenuOpen) {
+                closeNav();
+            }
+        });
+
+        document.querySelectorAll('.menu-items a').forEach(link => {
+            link.addEventListener('click', closeNav);
+        });
+
+        // تغییر مهم: اضافه کردن شرط برای اینکه کلیک روی مودال باعث بسته شدن منو نشود
+        document.addEventListener('click', function(e) {
+            if (isMenuOpen && 
+                !sidenav.contains(e.target) && 
+                e.target !== menuToggle && 
+                !e.target.closest('.history-context-menu') &&
+                !e.target.closest('.modal-overlay') // این خط اضافه شد
+            ) {
+                closeNav();
+            }
+        });
+
+        // تغییر مهم: اضافه کردن پارامتر keepNavOpen به تابع
+        function createNewChat(keepNavOpen = false) {
+            // اگر از طریق دکمه فراخوانی شود، آرگومان اول رویداد است نه boolean
+            if (typeof keepNavOpen !== 'boolean') {
+                keepNavOpen = false;
+            }
+
+            currentSessionId = Date.now().toString();
+            messageHistory = [];
+            selectedFiles = []; // Clear files
+            renderPreviews(mainPreview);
+            renderPreviews(startPreview);
+            
+            chatFeed.innerHTML = '';
+            
+            // فقط اگر صراحتاً گفته نشده باز بمان، ببند
+            if (!keepNavOpen) {
+                closeNav();
+            }
+            
+            startInputContainer.style.display = "flex";
+            startInputContainer.style.opacity = "1";
+            startInputContainer.style.transform = "translate(-50%, -50%)";
+            chatForm.style.display = "none";
+            startInput.value = ""; 
+            
+            stopResponse = false;
+            currentInterval = null;
+            currentEditContainer = null;
+            currentEditData = null;
+            
+            renderHistory(); 
+            
+            setTimeout(() => {
+                startInput.focus();
+            }, 300);
+            
+            console.log("چت جدید ایجاد شد!");
+        }
+
+        newChatBtn.addEventListener("click", createNewChat);
+
+        function scrollToBottom() {
+            chatFeed.scrollTop = chatFeed.scrollHeight;
+        }
+
+        function addMessage(text, sender, isInstant = false, attachments = []) { // Added attachments param
+            if (sender === "bot") {
+                const messageContainer = document.createElement("div");
+                messageContainer.classList.add("bot-message-container");
+                
+                const msg = document.createElement("div");
+                msg.classList.add("message", sender);
+                // Store raw text for copy/edit/logic
+                msg.dataset.rawText = text;
+                
+                if(isInstant) msg.classList.add("no-anim"); 
+
+                const isPersian = /[\u0600-\u06FF]/.test(text);
+
+                if (isPersian) {
+                    msg.style.direction = "rtl";
+                    msg.style.textAlign = "right";
+                    msg.style.alignSelf = "flex-end";
+                    msg.style.fontFamily = "'Vazir', sans-serif";
+                } else {
+                    msg.style.direction = "ltr";
+                    msg.style.textAlign = "left";
+                    msg.style.alignSelf = "flex-start";
+                    msg.style.fontFamily = "'Inter', sans-serif";
+                }
+
+                messageContainer.appendChild(msg);
+                chatFeed.appendChild(messageContainer);
+                scrollToBottom();
+
+                if (isInstant) {
+                        msg.innerHTML = parseMarkdown(text);
+                        addBotIcons(messageContainer);
+                        return;
+                }
+
+                let i = 0;
+                let currentText = "";
+                msg.innerHTML = ""; // اطمینان از خالی بودن قبل از شروع
+
+                currentInterval = setInterval(() => {
+                    if (stopResponse) {
+                        clearInterval(currentInterval);
+                        currentInterval = null;
+                        setSendButtonToArrow();
+                        saveSession(); 
+                        return;
+                    }
+                    if (i < text.length) {
+                        currentText += text[i];
+                        // تبدیل لحظه‌ای به HTML برای اعمال استایل‌ها حین تایپ
+                        msg.innerHTML = parseMarkdown(currentText);
+                        i++;
+                        scrollToBottom();
+                    } else {
+                        clearInterval(currentInterval);
+                        currentInterval = null;
+                        
+                        // Apply formatting when typing is done
+                        msg.innerHTML = parseMarkdown(text);
+                        
+                        setSendButtonToArrow();
+                        addBotIcons(messageContainer);
+                        saveSession(); 
+                    }
+                }, 20);
+
+            } else {
+                const messageContainer = document.createElement("div");
+                messageContainer.classList.add("user-message-container");
+                
+                const msg = document.createElement("div");
+                msg.classList.add("message", sender);
+                // Store raw text
+                msg.dataset.rawText = text;
+                
+                if(isInstant) msg.classList.add("no-anim");
+
+                // --- NEW CODE START: Render Attachments (Top) ---
+                if (attachments && attachments.length > 0) {
+                    const imagesContainer = document.createElement("div");
+                    imagesContainer.className = "chat-images-container"; // Use class for scrollbar styling
+                    imagesContainer.style.display = "flex";
+                    imagesContainer.style.flexWrap = "nowrap"; // Changed to nowrap
+                    imagesContainer.style.overflowX = "auto"; // Enable horizontal scrolling
+                    imagesContainer.style.gap = "5px";
+                    
+                    // اگر متن هم وجود دارد، فاصله پایین برای تصاویر در نظر بگیر (البته گپ فلکس هم هست)
+                    if (text && text.trim().length > 0) {
+                        // imagesContainer.style.marginBottom = "5px"; // Handled by gap in .message.user
+                    }
+                    
+                    attachments.forEach(file => {
+                        if (file.type.startsWith("image/")) {
+                            const img = document.createElement("img");
+                            img.src = URL.createObjectURL(file);
+                            img.style.maxHeight = "200px";
+                            img.style.width = "auto"; 
+                            img.style.borderRadius = "10px";
+                            img.style.flexShrink = "0"; // Prevent shrinking
+                            img.onload = () => scrollToBottom();
+                            imagesContainer.appendChild(img);
+                        }
+                    });
+                    if (imagesContainer.children.length > 0) {
+                          msg.appendChild(imagesContainer);
+                    }
+                }
+                // --- NEW CODE END ---
+
+                // Render formatted markdown instantly for user (Bottom)
+                if (text && text.trim().length > 0) {
+                    const textBubble = document.createElement("div");
+                    textBubble.className = "user-text-bubble";
+                    textBubble.innerHTML = parseMarkdown(text);
+                    msg.appendChild(textBubble);
+                }
+                
+                messageContainer.appendChild(msg);
+                
+                const iconsContainer = document.createElement("div");
+                iconsContainer.classList.add("message-icons-container");
+                iconsContainer.innerHTML = `
+                    <button title="کپی متن"><svg id='Copy_24' width='18' height='18' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><rect width='24' height='24' stroke='none' fill='#000000' opacity='0'/>
+                    <g transform="matrix(1 0 0 1 12 12)" >
+                    <path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: currentColor; fill-rule: nonzero; opacity: 1;" transform=" translate(-12, -12)" d="M 4 2 C 2.895 2 2 2.895 2 4 L 2 18 L 4 18 L 4 4 L 18 4 L 18 2 L 4 2 z M 8 6 C 6.895 6 6 6.895 6 8 L 6 20 C 6 21.105 6.895 22 8 22 L 20 22 C 21.105 22 22 21.105 22 20 L 22 8 C 22 6.895 21.105 6 20 6 L 8 6 z M 8 8 L 20 8 L 20 20 L 8 20 L 8 8 z" stroke-linecap="round" />
+                    </g>
+                    </svg></button>
+
+                    <button title="ادیت متن">
+                        <svg id="edit_24" width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20.385 6.585 C21.205 5.765 21.205 4.435 20.385 3.615 C19.565 2.795 18.235 2.795 17.415 3.615 L9 12 L9 15 L12 15 L20.385 6.585 Z"
+                                stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+                            <path d="M16 5 L19 8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+                            <path d="M7 7 L6 7 C4.895 7 4 7.895 4 9 L4 18 C4 19.105 4.895 20 6 20 L15 20 C16.105 20 17 19.105 17 18 L17 17"
+                                stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                `;
+                
+                messageContainer.appendChild(iconsContainer);
+
+                // --- NEW LOGIC: Handle Icon Visibility (Fade in/out) ---
+                // 1. نمایش اولیه
+                iconsContainer.classList.add('visible');
+                
+                let hideTimeout;
+                
+                // تابع برای مخفی کردن
+                const hideIcons = () => {
+                    iconsContainer.classList.remove('visible');
+                };
+
+                // تابع برای نمایش موقت (ریست کردن تایمر)
+                const showIconsTemporary = () => {
+                    iconsContainer.classList.add('visible');
+                    clearTimeout(hideTimeout);
+                    hideTimeout = setTimeout(hideIcons, 3000); // 3 ثانیه بعد مخفی شود
+                };
+
+                // تنظیم تایمر اولیه برای مخفی کردن بعد از ارسال
+                hideTimeout = setTimeout(hideIcons, 3000);
+
+                // 2. هندل کردن کلیک روی پیام (برای موبایل یا وقتی موس نیست)
+                messageContainer.addEventListener('click', (e) => {
+                    showIconsTemporary();
+                });
+                // -----------------------------------------------------
+
+                chatFeed.appendChild(messageContainer);
+                scrollToBottom();
+            }
+        }
+
+        function addBotIcons(messageContainer) {
+            const iconsContainer = document.createElement("div");
+            iconsContainer.classList.add("message-icons-container");
+            iconsContainer.innerHTML = `
+                <button title="کپی متن"><svg id='Copy_24' width='18' height='18' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><rect width='24' height='24' stroke='none' fill='#000000' opacity='0'/>
+                <g transform="matrix(1 0 0 1 12 12)" >
+                <path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: currentColor; fill-rule: nonzero; opacity: 1;" transform=" translate(-12, -12)" d="M 4 2 C 2.895 2 2 2.895 2 4 L 2 18 L 4 18 L 4 4 L 18 4 L 18 2 L 4 2 z M 8 6 C 6.895 6 6 6.895 6 8 L 6 20 C 6 21.105 6.895 22 8 22 L 20 22 C 21.105 22 22 21.105 22 20 L 22 8 C 22 6.895 21.105 6 20 6 L 8 6 z M 8 8 L 20 8 L 20 20 L 8 20 L 8 8 z" stroke-linecap="round" />
+                </g>
+                </svg></button>
+
+                <button title="اشتراک"><svg id='Share_3_24' width='18' height='18' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><rect width='24' height='24' stroke='none' fill='#000000' opacity='0'/>
+                <g transform="matrix(1 0 0 1 12 12)" >
+                <path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: currentColor; fill-rule: nonzero; opacity: 1;" transform=" translate(-12, -12.15)" d="M 16.707031 2.2929688 L 15.292969 3.7070312 L 17.585938 6 L 17 6 C 10.936593 6 6 10.936593 6 17 L 6 18 L 8 18 L 8 17 C 8 12.017407 12.017407 8 17 8 L 17.585938 8 L 15.292969 10.292969 L 16.707031 11.707031 L 21.414062 7 L 16.707031 2.2929688 z M 2 8 L 2 9 L 2 19 C 2 20.64497 3.3550302 22 5 22 L 19 22 C 20.64497 22 22 20.64497 22 19 L 22 18 L 22 17 L 20 17 L 20 18 L 20 19 C 20 19.56503 19.56503 20 19 20 L 5 20 C 4.4349698 20 4 19.56503 4 19 L 4 9 L 4 8 L 2 8 z" stroke-linecap="round" />
+                </g>
+                </svg></button>
+
+                <button title="جنریت دوباره"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 4v6h-6"/>
+                <path d="M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg></button>
+            `;
+            messageContainer.appendChild(iconsContainer);
+            scrollToBottom();
+        }
+
+        function showTypingIndicator() {
+            const typing = document.createElement("div");
+            typing.classList.add("message", "bot", "typing", "persian-text");
+            typing.innerHTML = `<span></span><span></span><span></span>`;
+            chatFeed.appendChild(typing);
+            scrollToBottom();
+            return typing;
+        }
+
+        function setSendButtonToStop() {
+            sendIcon.innerHTML = `<rect x="4" y="4" width="8" height="8" fill="currentColor"/>`;
+        }
+
+        function setSendButtonToArrow() {
+            sendIcon.innerHTML = `<path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V3.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4-.007-.007a.498.498 0 0 0-.7.007l-4 4a.5.5 0 1 0 .708.708L7.5 3.707V14.5A.5.5 0 0 0 8 15"/>`;
+        }
+
+        function sendToAPI(userMessage, typingIndicator) {
+            // Include file info if any (Visual only for now since API doesn't support it in this code)
+            let messageContent = userMessage;
+            if (selectedFiles.length > 0) {
+                const fileNames = selectedFiles.map(f => f.name).join(', ');
+                messageContent += `\n[فایل‌های پیوست شده: ${fileNames}]`;
+            }
+
+            messageHistory.push({ role: "user", content: messageContent });
+            saveSession(); 
+
+            // Clear files after sending
+            selectedFiles = [];
+            renderPreviews(mainPreview);
+            renderPreviews(startPreview);
+
+            fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": "Bearer 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",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": window.location.href,
+                    "X-Title": "DeepSeek ChatBot"
+                },
+                body: JSON.stringify({
+                    model: "deepseek/deepseek-chat",
+                    messages: messageHistory,
+                    max_tokens: 500
+                })
+            })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                typingIndicator.remove();
+                if (data.error) {
+                    addMessage("خطا: " + (data.error.message || "خطای ناشناخته"), "bot");
+                } else {
+                    const answer = data.choices?.[0]?.message?.content || "پاسخی دریافت نشد.";
+                    addMessage(answer, "bot");
+                    messageHistory.push({ role: "assistant", content: answer });
+                    saveSession(); 
+                }
+            })
+            .catch(err => {
+                typingIndicator.remove();
+                console.error("Error:", err);
+                addMessage("خطا در ارتباط با سرور: " + err.message, "bot");
+            });
+        }
+
+        // ====== FILE HANDLING LOGIC ======
+        function handleFileSelection(event, previewContainer) {
+            const newFiles = Array.from(event.target.files);
+            
+            // Check for duplicate names (optional) or just limit count
+            if (selectedFiles.length + newFiles.length > 5) {
+                // جایگزینی alert با showToast
+                showToast("حداکثر 5 فایل مجاز است.", "error");
+                return;
+            }
+
+            selectedFiles = [...selectedFiles, ...newFiles];
+            renderPreviews(mainPreview); // Update both containers just in case
+            renderPreviews(startPreview);
+            
+            // Clear input value to allow selecting the same file again if deleted and re-added
+            event.target.value = ''; 
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderPreviews(mainPreview);
+            renderPreviews(startPreview);
+        }
+
+        function renderPreviews(container) {
+            if (!container) return;
+
+            container.innerHTML = '';
+            
+            if (selectedFiles.length === 0) {
+                container.classList.remove('active');
+                return;
+            }
+
+            container.classList.add('active');
+
+            selectedFiles.forEach((file, index) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-item';
+
+                // Check if file is image
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.className = 'preview-img';
+                    img.file = file;
+                    previewItem.appendChild(img);
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => { img.src = e.target.result; };
+                    reader.readAsDataURL(file);
+                } else {
+                    // Generic file icon
+                    const div = document.createElement('div');
+                    div.className = 'preview-file-icon';
+                    div.textContent = file.name.split('.').pop().toUpperCase();
+                    div.title = file.name;
+                    previewItem.appendChild(div);
+                }
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-file';
+                removeBtn.innerHTML = '✕';
+                removeBtn.onclick = (e) => {
+                    e.preventDefault(); // Prevent accidental form submit
+                    removeFile(index);
+                };
+
+                previewItem.appendChild(removeBtn);
+                container.appendChild(previewItem);
+            });
+        }
+
+        // Attach listeners to file inputs
+        startFileInput.addEventListener("change", (e) => handleFileSelection(e, startPreview));
+        fileInput.addEventListener("change", (e) => handleFileSelection(e, mainPreview));
+
+        // Update Start Buttons
+        startAttachBtn.addEventListener("click", () => {
+            startFileInput.click();
+        });
+
+        // Start Input Logic
+        function handleStartInput() {
+            const text = startInput.value.trim();
+            // Allow sending if there is text OR files
+            if (!text && selectedFiles.length === 0) return;
+
+            // Generate message with file names if needed
+            let displayText = text;
+            
+            // --- MODIFIED: Pass files to addMessage ---
+            // Pass a clone of the array because selectedFiles will be cleared
+            const currentFiles = [...selectedFiles]; 
+            addMessage(displayText, "user", false, currentFiles);
+            // ------------------------------------------
+
+            startInput.value = "";
+
+            startInputContainer.style.transition = "opacity 0.5s, transform 0.5s";
+            startInputContainer.style.opacity = "0";
+            startInputContainer.style.transform = "translate(-50%, -60%)";
+            setTimeout(() => {
+                startInputContainer.style.display = "none";
+                chatForm.style.display = "flex";
+                userInput.focus();
+            }, 80);
+
+            setSendButtonToStop();
+            stopResponse = false;
+            const typing = showTypingIndicator();
+            sendToAPI(displayText, typing);
+        }
+
+        startSendBtn.addEventListener("click", handleStartInput);
+
+        startInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleStartInput();
+            }
+        });
+
+        // Update Main Chat Form Logic
+        chatForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const text = userInput.value.trim();
+            
+            if (!text && selectedFiles.length === 0) return;
+
+            // --- MODIFIED: Pass files to addMessage ---
+            const currentFiles = [...selectedFiles];
+            addMessage(text, "user", false, currentFiles);
+            // ------------------------------------------
+
+            userInput.value = "";
+            
+            setSendButtonToStop();
+            stopResponse = false;
+            const typing = showTypingIndicator();
+
+            sendToAPI(text, typing);
+        });
+
+        sendBtn.addEventListener("click", () => {
+            if (currentInterval) {
+                stopResponse = true;
+                setSendButtonToArrow();
+            }
+        });
+
+        userInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                chatForm.dispatchEvent(new Event("submit"));
+            }
+        });
+
+        attachBtn.addEventListener("click", () => {
+            fileInput.click();
+        });
+        
+        window.addEventListener('load', () => {
+            startInput.focus();
+            renderHistory(); 
+        });
+    </script>
+    <script>
+        // ثبت Service Worker برای قابلیت نصب PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => {
+                    console.warn('Service worker registration failed:', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
