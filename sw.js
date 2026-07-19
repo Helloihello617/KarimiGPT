@@ -1,9 +1,9 @@
 // Service Worker ساده برای فعال‌سازی قابلیت نصب PWA
 const CACHE_NAME = 'karimigpt-cache-v1';
 const URLS_TO_CACHE = [
-  './chatbot7-5.html',
-  './manifest.json',
-  './logoo.jpg'
+  'index.html',
+  'manifest.json',
+  'logoo.jpg'
 ];
 
 self.addEventListener('install', (event) => {
