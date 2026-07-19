@@ -2,7 +2,7 @@
   "name": "KarimiGPT ChatBot",
   "short_name": "KarimiGPT",
   "description": "دستیار هوشمند KarimiGPT",
-  "start_url": "./chatbot7-5.html",
+  "start_url": "index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
