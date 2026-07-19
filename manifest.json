@@ -1,0 +1,39 @@
+{
+  "name": "KarimiGPT ChatBot",
+  "short_name": "KarimiGPT",
+  "description": "دستیار هوشمند KarimiGPT",
+  "start_url": "./chatbot7-5.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "dir": "rtl",
+  "lang": "fa",
+  "icons": [
+    {
+      "src": "logoo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "logoo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "logoo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    },
+    {
+      "src": "logoo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ]
+}
